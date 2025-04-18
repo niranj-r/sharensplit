@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ShareNSplit</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="particles-js"></div>
+    <div class="container">
+        <h1>Share & Split</h1>
+        <button onclick="addPerson()">Add Person</button>
+        <button onclick="addStop()">Add Stop</button>
+        <button onclick="calculateSettlements()">Calculate Settlements</button>
+        <button onclick="showIndividualStats()">Individual Stats</button>
+       
+        <h2>People</h2>
+        <ul id="people-list"></ul>
+
+        <h2>Final Settlements</h2>
+        <table id="settlements-table">
+            <thead>
+                <tr><th>From</th><th>To</th><th>Amount</th></tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+
+        <h2>Individual Stats</h2>
+        <table id="individual-stats-table">
+            <thead>
+                <tr><th>Stop</th><th>Paid</th><th>Owed</th><th>Balance</th></tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+
+        <h2>Group Stats</h2>
+        <table id="group-stats-table">
+            <thead>
+                <tr><th>Stop</th><th>Participants</th><th>Total Expense</th></tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+    <script src="particles.js"></script>
+<script>
+let people = [];
+let stops = [];
+
+function addPerson() {
+    let name = prompt("Enter name:");
+    if (name && !people.includes(name)) {
+        people.push(name);
+        updatePeopleList();
+    }
+}
+
+function updatePeopleList() {
+    let list = document.getElementById("people-list");
+    list.innerHTML = "";
+    people.forEach(person => {
+        let li = document.createElement("li");
+        li.textContent = person;
+        list.appendChild(li);
+    });
+}
+
+function addStop() {
+    let stopName = prompt("Enter stop name:");
+    if (!stopName) return;
+    
+    let totalExpense = parseFloat(prompt("Enter total amount spent at " + stopName + ":"));
+    let payments = {};
+    let participants = [];
+
+    people.forEach(person => {
+        let paid = parseFloat(prompt(`How much did ${person} pay at ${stopName}? (Enter 0 if not paid)`));
+        if (paid > 0) {
+            payments[person] = paid;
+        }
+    });
+
+    participants = people.filter(person => confirm(`${person} participated in ${stopName}?`));
+    if (participants.length === 0) {
+        alert("You need at least one participant!");
+        return;
+    }
+
+    let splitType = prompt("Choose split method: 1-Equal, 2-% Based, 3-Shares, 4-Exact Amount");
+    let amounts = {};
+    
+    if (splitType == 1) {
+        let share = totalExpense / participants.length;
+        participants.forEach(p => amounts[p] = share);
+    } else if (splitType == 2) {
+        let totalPercent = 0;
+        participants.forEach(p => {
+            let percent = parseFloat(prompt(`% for ${p}:`));
+            totalPercent += percent;
+            amounts[p] = (percent / 100) * totalExpense;
+        });
+        if (Math.abs(totalPercent - 100) > 0.01) {
+            alert("Total % must be 100!");
+            return;
+        }
+    } else if (splitType == 3) {
+        let totalShares = 0;
+        let shares = {};
+        participants.forEach(p => {
+            shares[p] = parseInt(prompt(`Shares for ${p}:`));
+            totalShares += shares[p];
+        });
+        participants.forEach(p => amounts[p] = (shares[p] / totalShares) * totalExpense);
+    } else if (splitType == 4) {
+        let totalEntered = 0;
+        participants.forEach(p => {
+            amounts[p] = parseFloat(prompt(`Amount for ${p}:`));
+            totalEntered += amounts[p];
+        });
+        if (Math.abs(totalEntered - totalExpense) > 0.01) {
+            alert("Total must match the expense!");
+            return;
+        }
+    } else {
+        alert("Invalid split method selected!");
+        return;
+    }
+
+    stops.push({ stopName, totalExpense, payments, participants, amounts });
+    updateGroupStatsTable();
+}
+
+function updateGroupStatsTable() {
+    let groupStatsTable = document.querySelector("#group-stats-table tbody");
+    groupStatsTable.innerHTML = "";
+    
+    stops.forEach(stop => {
+        let participants = stop.participants.join(", ");
+        const row = document.createElement("tr");
+        row.innerHTML = `<td>${stop.stopName}</td><td>${participants}</td><td>₹${stop.totalExpense.toFixed(2)}</td>`;
+        groupStatsTable.appendChild(row);
+    });
+}
+
+function calculateSettlements() {
+    let balances = {};
+    let stats = {}; // For saving to database
+    
+    people.forEach(p => {
+        balances[p] = 0;
+        stats[p] = { paid: 0, owed: 0 };
+    });
+
+    stops.forEach(stop => {
+        // Update balances based on what each person paid
+        for (let p in stop.payments) {
+            balances[p] += stop.payments[p];
+            stats[p].paid += stop.payments[p];
+        }
+        
+        // Update balances based on what each person owes
+        for (let p in stop.amounts) {
+            balances[p] -= stop.amounts[p];
+            stats[p].owed += stop.amounts[p];
+        }
+    });
+
+    let debts = [], credits = [];
+    for (let p in balances) {
+        if (balances[p] > 0) credits.push({ person: p, amount: balances[p] });
+        else if (balances[p] < 0) debts.push({ person: p, amount: -balances[p] });
+    }
+
+    debts.sort((a, b) => b.amount - a.amount);
+    credits.sort((a, b) => b.amount - a.amount);
+
+    let settlements = [];
+    let settlementsTable = document.querySelector("#settlements-table tbody");
+    settlementsTable.innerHTML = "";
+
+    while (debts.length > 0 && credits.length > 0) {
+        let debt = debts[0];
+        let credit = credits[0];
+
+        let settledAmount = Math.min(debt.amount, credit.amount);
+        settledAmount = parseFloat(settledAmount.toFixed(2)); // Round to 2 decimal places
+        
+        settlements.push({
+            from: debt.person,
+            to: credit.person,
+            amount: settledAmount
+        });
+        
+        const row = document.createElement("tr");
+        row.innerHTML = `<td>${debt.person}</td><td>${credit.person}</td><td>₹${settledAmount.toFixed(2)}</td>`;
+        settlementsTable.appendChild(row);
+
+        debt.amount -= settledAmount;
+        credit.amount -= settledAmount;
+
+        if (debt.amount < 0.01) debts.shift();
+        if (credit.amount < 0.01) credits.shift();
+    }
+
+    updateIndividualStatsTable(stats);
+    sendStatsToServer(stats);
+    
+    alert("Settlements calculated! Check the table.");
+}
+
+function updateIndividualStatsTable(stats) {
+    let individualStatsTable = document.querySelector("#individual-stats-table tbody");
+    individualStatsTable.innerHTML = "";
+    
+    for (let person in stats) {
+        const paid = stats[person].paid.toFixed(2);
+        const owed = stats[person].owed.toFixed(2);
+        const balance = (stats[person].paid - stats[person].owed).toFixed(2);
+        
+        const row = document.createElement("tr");
+        row.innerHTML = `<td>${person}</td><td>₹${paid}</td><td>₹${owed}</td><td>₹${balance}</td>`;
+        individualStatsTable.appendChild(row);
+    }
+}
+
+function showIndividualStats() {
+    let name = prompt("Enter name of individual:");
+    if (!people.includes(name)) {
+        alert("Person not found!");
+        return;
+    }
+    
+    let individualStatsTable = document.querySelector("#individual-stats-table tbody");
+    individualStatsTable.innerHTML = "";
+    
+    let totalPaid = 0;
+    let totalOwed = 0;
+    
+    stops.forEach(stop => {
+        if (stop.participants.includes(name)) {
+            let paid = stop.payments[name] || 0;
+            let owed = stop.amounts[name] || 0;
+            let balance = paid - owed;
+            
+            totalPaid += paid;
+            totalOwed += owed;
+            
+            const row = document.createElement("tr");
+            row.innerHTML = `<td>${stop.stopName}</td><td>₹${paid.toFixed(2)}</td><td>₹${owed.toFixed(2)}</td><td>₹${balance.toFixed(2)}</td>`;
+            individualStatsTable.appendChild(row);
+        }
+    });
+    
+    // Add total row
+    const totalRow = document.createElement("tr");
+    totalRow.innerHTML = `<td><strong>Total</strong></td><td>₹${totalPaid.toFixed(2)}</td><td>₹${totalOwed.toFixed(2)}</td><td>₹${(totalPaid - totalOwed).toFixed(2)}</td>`;
+    individualStatsTable.appendChild(totalRow);
+}
+
+function sendStatsToServer(stats) {
+    const userId = localStorage.getItem("userId");
+    if (!userId) return alert("Not logged in. Stats not saved.");
+
+    const payload = [];
+
+    for (let person in stats) {
+        payload.push({
+            userId,
+            person,
+            totalPaid: stats[person].paid,
+            totalSpent: stats[person].owed,
+            totalReceived: stats[person].paid - stats[person].owed
+        });
+    }
+
+    console.log("📤 Sending stats to server:", payload);
+
+    fetch("http://localhost:3000/api/stats/save", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+    })
+        .then(res => res.json())
+        .then(data => {
+            console.log("✅ Stats saved response:", data);
+            alert("✅ Stats saved successfully.");
+        })
+        .catch(err => {
+            console.error("❌ Error saving stats:", err);
+            alert("❌ Failed to save stats to server.");
+        });
+}
+
+// Optional: Particle.js initialization if you want to keep it
+function initParticles() {
+    if (typeof particlesJS !== 'undefined') {
+        particlesJS("particles-js", {
+            "particles": {
+                "number": {
+                    "value": 100,
+                    "density": {
+                        "enable": true,
+                        "value_area": 800
+                    }
+                },
+                "color": {
+                    "value": "#00aaff"
+                },
+                "shape": {
+                    "type": "circle"
+                },
+                "opacity": {
+                    "value": 0.5,
+                    "random": true
+                },
+                "size": {
+                    "value": 4,
+                    "random": true
+                },
+                "line_linked": {
+                    "enable": true,
+                    "distance": 150,
+                    "color": "#00aaff",
+                    "opacity": 0.4,
+                    "width": 1
+                },
+                "move": {
+                    "enable": true,
+                    "speed": 2,
+                    "direction": "none",
+                    "random": false,
+                    "straight": false,
+                    "out_mode": "out",
+                    "bounce": false
+                }
+            },
+            "interactivity": {
+                "detect_on": "canvas",
+                "events": {
+                    "onhover": {
+                        "enable": true,
+                        "mode": "repulse"
+                    },
+                    "onclick": {
+                        "enable": true,
+                        "mode": "push"
+                    }
+                },
+                "modes": {
+                    "repulse": {
+                        "distance": 100,
+                        "duration": 0.4
+                    },
+                    "push": {
+                        "particles_nb": 4
+                    }
+                }
+            },
+            "retina_detect": true
+        });
+    }
+}
+
+// Initialize particles if needed
+document.addEventListener('DOMContentLoaded', function() {
+    initParticles();
+});
+</script>
+
+</body>
+</html>

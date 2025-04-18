@@ -1,0 +1,202 @@
+@import url("https://fonts.googleapis.com/css2?family=Open+Sans:wght@200;300;400;500;600;700&display=swap");
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: "Open Sans", sans-serif;
+}
+
+body {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  width: 100%;
+  padding: 0 10px;
+  overflow: hidden;
+}
+
+/* Background Effect */
+body::before {
+  content: "";
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background: url("./images/login-hero-bg.png"), #000;
+  background-position: center;
+  background-size: cover;
+  z-index: -1;
+  transform: scale(1.2);
+  animation: parallaxMove 9s infinite alternate ease-in-out;
+}
+
+@keyframes parallaxMove {
+  0% { transform: scale(1.07) translateY(0px); }
+  100% { transform: scale(1.07) translateY(-20px); }
+}
+
+/* Wrapper */
+.wrapper {
+  width: 400px;
+  border-radius: 8px;
+  padding: 30px;
+  text-align: center;
+  border: 2.5px solid #ffffffb2;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  animation: fadeIn 1s ease-in-out;
+}
+
+/* Error Message Box */
+.error-box {
+  display: block;
+  background: rgba(255, 0, 0, 0.1);
+  color: red;
+  font-weight: 600;
+  border: 1px solid red;
+  padding: 10px;
+  border-radius: 5px;
+  margin-bottom: 15px;
+  opacity: 1;
+  animation: fadeIn 0.5s ease-in-out;
+}
+
+.hidden {
+  display: none;
+}
+
+/* Form */
+form {
+  display: flex;
+  flex-direction: column;
+}
+
+h2 {
+  font-size: 2rem;
+  margin-bottom: 20px;
+  color: #292c3d;
+  animation: fadeIn 1s ease-in-out;
+}
+
+/* Input Fields */
+.input-field {
+  position: relative;
+  border-bottom: 2px solid #363636;
+  margin: 15px 0;
+  animation: fadeIn 1s ease-in-out;
+}
+
+.input-field label {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  transform: translateY(-50%);
+  color: #292C3D;
+  font-size: 16px;
+  pointer-events: none;
+  transition: 0.15s ease;
+}
+
+.input-field input {
+  width: 100%;
+  height: 40px;
+  background: transparent;
+  border: none;
+  outline: none;
+  font-size: 16px;
+  color: #292C3D;
+}
+
+.input-field input:focus ~ label,
+.input-field input:valid ~ label {
+  font-size: 0.8rem;
+  top: 10px;
+  transform: translateY(-120%);
+}
+
+/* Forget Section */
+.forget {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 25px 0 35px 0;
+  color: #292C3D;
+  animation: fadeIn 1s ease-in-out;
+}
+
+#remember {
+  accent-color: #292C3D;
+}
+
+.forget label {
+  display: flex;
+  align-items: center;
+}
+
+.forget label p {
+  margin-left: 8px;
+}
+
+/* Links */
+.wrapper a {
+  color: #292C3D;
+  text-decoration: none;
+}
+
+.wrapper a:hover {
+  text-decoration: underline;
+}
+
+/* Button */
+button {
+  background: #292C3D;
+  color: #f5f8ff;
+  font-weight: 600;
+  border: none;
+  padding: 12px 20px;
+  cursor: pointer;
+  border-radius: 5px;
+  font-size: 16px;
+  border: 2px solid transparent;
+  transition: 0.3s ease;
+  animation: fadeIn 1s ease-in-out;
+}
+
+button:hover {
+  color: #292C3D;
+  border-color: #292C3D;
+  background: rgba(255, 255, 255, 0.15);
+}
+
+/* Register */
+.register {
+  text-align: center;
+  margin-top: 30px;
+  color: #292C3D;
+  animation: fadeIn 1s ease-in-out;
+}
+
+/* Shake Animation */
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-5px); }
+  50% { transform: translateX(5px); }
+  75% { transform: translateX(-5px); }
+}
+
+.shake {
+  animation: shake 0.5s ease-in-out;
+}
+
+/* Fade-in Animation */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

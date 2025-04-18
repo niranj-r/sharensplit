@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Split History</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #0f0f0f;
+      color: #f1f1f1;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1000px;
+      margin: auto;
+      background-color: #1a1a1a;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 0 15px rgba(255, 255, 255, 0.05);
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 30px;
+      font-size: 2rem;
+      color: #ffffff;
+    }
+
+    .date-header {
+      background-color: #000;
+      color: #ffffff;
+      padding: 14px 20px;
+      font-size: 18px;
+      font-weight: bold;
+      border-radius: 8px;
+      margin-top: 35px;
+      box-shadow: inset 0 0 6px #333;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 12px;
+      background-color: #1e1e1e;
+      border-radius: 10px;
+      overflow: hidden;
+      border: 2px solid transparent;
+      border-image: linear-gradient(to right, #007bff, #8a2be2) 1;
+    }
+
+    th, td {
+      padding: 14px 16px;
+      text-align: left;
+    }
+
+    th {
+      background-color: #2c2c2c;
+      color: #f1f1f1;
+      font-weight: 600;
+      font-size: 14px;
+      border-bottom: 2px solid #444;
+    }
+
+    td {
+      color: #e0e0e0;
+      border-bottom: 1px solid #333;
+    }
+
+    .divider-row td {
+      border-top: 2px solid #555;
+      padding: 0;
+      height: 1px;
+    }
+
+    button {
+      display: block;
+      margin: 40px auto 10px;
+      padding: 12px 28px;
+      font-size: 16px;
+      font-weight: bold;
+      background: linear-gradient(to right, #007bff, #8a2be2);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: transform 0.2s ease, box-shadow 0.3s ease;
+    }
+
+    button:hover {
+      transform: scale(1.05);
+      box-shadow: 0 0 12px rgba(138, 43, 226, 0.6);
+    }
+
+    a {
+      color: #90caf9;
+    }
+
+    ::selection {
+      background-color: #8a2be2;
+      color: white;
+    }
+    #particles-js {
+    position: fixed;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    background: linear-gradient(135deg, #1a1a1a, #333);
+    z-index: -1; /* Ensures particles stay behind content */
+}
+  </style>
+</head>
+<body>
+  <div id="particles-js"></div>
+  <div class="container">
+    <h1>Your Split History</h1>
+    <div id="history-list"></div>
+    <button onclick="window.location.href='dashboard.html'">Back</button>
+  </div>
+  <script src="particles.js"></script>
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const userId = localStorage.getItem("userId");
+      if (!userId) {
+        alert("Please login first.");
+        window.location.href = "login.html";
+        return;
+      }
+
+      fetch("http://localhost:3000/api/stats/history", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId })
+      })
+        .then(res => res.json())
+        .then(data => {
+          const container = document.getElementById("history-list");
+          container.innerHTML = "";
+
+          if (!data.length) {
+            container.innerHTML = "<p>No history found.</p>";
+            return;
+          }
+
+          const grouped = {};
+          data.forEach(entry => {
+            const createdDate = new Date(entry.createdAt);
+            const date = `${String(createdDate.getDate()).padStart(2, '0')}/${String(createdDate.getMonth() + 1).padStart(2, '0')}/${createdDate.getFullYear()}`;
+            if (!grouped[date]) grouped[date] = [];
+            grouped[date].push(entry);
+          });
+
+          Object.keys(grouped).forEach(date => {
+            const dateHeader = document.createElement("div");
+            dateHeader.className = "date-header";
+            dateHeader.textContent = date;
+            container.appendChild(dateHeader);
+
+            const table = document.createElement("table");
+
+            const thead = document.createElement("thead");
+            thead.innerHTML = `
+              <tr>
+                <th>Person</th>
+                <th>Paid (₹)</th>
+                <th>Spent (₹)</th>
+                <th>Received (₹)</th>
+                <th>Time</th>
+              </tr>
+            `;
+            table.appendChild(thead);
+
+            const tbody = document.createElement("tbody");
+
+            let prevTime = null;
+
+            grouped[date].forEach((entry, index) => {
+              const currentTime = new Date(entry.createdAt).toLocaleTimeString();
+
+              if (prevTime && currentTime !== prevTime) {
+                const divider = document.createElement("tr");
+                divider.className = "divider-row";
+                divider.innerHTML = "<td colspan='5'></td>";
+                tbody.appendChild(divider);
+              }
+
+              const tr = document.createElement("tr");
+              tr.innerHTML = `
+                <td>${entry.person}</td>
+                <td>${entry.totalPaid.toFixed(2)}</td>
+                <td>${entry.totalSpent.toFixed(2)}</td>
+                <td>${entry.totalReceived.toFixed(2)}</td>
+                <td>${currentTime}</td>
+              `;
+              tbody.appendChild(tr);
+
+              prevTime = currentTime;
+            });
+
+            table.appendChild(tbody);
+            container.appendChild(table);
+          });
+        })
+        .catch(err => {
+          console.error("❌ Error loading history:", err);
+          alert("Failed to load history.");
+        });
+    });
+
+    
+// Optional: Particle.js initialization if you want to keep it
+function initParticles() {
+    if (typeof particlesJS !== 'undefined') {
+        particlesJS("particles-js", {
+            "particles": {
+                "number": {
+                    "value": 100,
+                    "density": {
+                        "enable": true,
+                        "value_area": 800
+                    }
+                },
+                "color": {
+                    "value": "#00aaff"
+                },
+                "shape": {
+                    "type": "circle"
+                },
+                "opacity": {
+                    "value": 0.5,
+                    "random": true
+                },
+                "size": {
+                    "value": 4,
+                    "random": true
+                },
+                "line_linked": {
+                    "enable": true,
+                    "distance": 150,
+                    "color": "#00aaff",
+                    "opacity": 0.4,
+                    "width": 1
+                },
+                "move": {
+                    "enable": true,
+                    "speed": 2,
+                    "direction": "none",
+                    "random": false,
+                    "straight": false,
+                    "out_mode": "out",
+                    "bounce": false
+                }
+            },
+            "interactivity": {
+                "detect_on": "canvas",
+                "events": {
+                    "onhover": {
+                        "enable": true,
+                        "mode": "repulse"
+                    },
+                    "onclick": {
+                        "enable": true,
+                        "mode": "push"
+                    }
+                },
+                "modes": {
+                    "repulse": {
+                        "distance": 100,
+                        "duration": 0.4
+                    },
+                    "push": {
+                        "particles_nb": 4
+                    }
+                }
+            },
+            "retina_detect": true
+        });
+    }
+}
+
+// Initialize particles if needed
+document.addEventListener('DOMContentLoaded', function() {
+    initParticles();
+});
+  </script>
+</body>
+</html>

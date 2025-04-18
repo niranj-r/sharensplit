@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Signup - Sharensplit</title>
+  <link rel="stylesheet" href="login.css" />
+</head>
+<body>
+  <div class="background"></div>
+
+  <div class="wrapper">
+    <form id="signupForm">
+      <h2>Sign Up</h2>
+
+      <!-- Error Box -->
+      <div id="errorBox" class="error-box hidden"></div>
+      <div class="input-field">
+        <input type="text" id="signupName" required />
+        <label>Name</label>
+      </div>      
+      <div class="input-field">
+        <input type="email" id="signupEmail" required />
+        <label>Email</label>
+      </div>
+
+      <div class="input-field">
+        <input type="password" id="signupPassword" required />
+        <label>Password</label>
+      </div>
+
+      <button type="submit">Register</button>
+
+      <div class="register">
+        <p>Already have an account? <a href="login.html">Login</a></p>
+      </div>
+    </form>
+  </div>
+
+  <script>
+    document.getElementById("signupForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+
+  const name = document.getElementById("signupName").value;
+  const email = document.getElementById("signupEmail").value;
+  const password = document.getElementById("signupPassword").value;
+  const errorBox = document.getElementById("errorBox");
+  const button = document.querySelector("button");
+
+  errorBox.classList.add("hidden");
+  button.textContent = "Registering...";
+
+  try {
+    const res = await fetch("http://localhost:3000/signup", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, email, password }),
+    });
+
+    const data = await res.json();
+    button.textContent = "Register";
+
+    if (res.ok) {
+      alert("✅ Signup successful! Please login.");
+      window.location.href = "login.html";
+    } else {
+      showError("❌ " + data.message);
+    }
+  } catch (err) {
+    showError("⚠️ Server error: Unable to connect.");
+  }
+
+  function showError(message) {
+    errorBox.innerHTML = message;
+    errorBox.classList.remove("hidden");
+  }
+});
+
+  </script>
+  
+</body>
+</html>
