@@ -108,7 +108,7 @@
 
     if (!userId) {
       alert("You are not logged in. Redirecting to login.");
-      window.location.href = "login.html";
+      window.location.href = "index.html";
     } else {
       console.log("✅ User ID from localStorage:", userId);
 
@@ -141,7 +141,7 @@
                 console.error("❌ Error creating fallback user:", err);
                 alert("Critical error. Please login again.");
                 localStorage.removeItem("userId");
-                window.location.href = "login.html";
+                window.location.href = "index.html";
               });
           }
         })
@@ -152,7 +152,7 @@
     }
 
     function goToSplit() {
-      window.location.href = "index.html"; // Or your split bill page
+      window.location.href = "split.html"; // Or your split bill page
     }
 
     function goToHistory() {

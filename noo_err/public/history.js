@@ -3,7 +3,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const userId = localStorage.getItem("userId");
     if (!userId) {
       alert("Please login first.");
-      window.location.href = "login.html";
+      window.location.href = "index.html";
       return;
     }
   
